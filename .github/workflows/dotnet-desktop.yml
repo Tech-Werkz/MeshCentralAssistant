@@ -1,4 +1,4 @@
-name: .NET Core Desktop
+name: MeshCentral Assistant
 
 on:
   push:
@@ -14,30 +14,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup .NET 6
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: "6.0.x"
-
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Restore
-        run: |
-          msbuild meshcentralassistant.csproj `
-            /t:Restore `
-            /p:Configuration=Release `
-            /p:TargetFramework=net6.0-windows10.0.19041.0
-
-      - name: Build
+      - name: Build MeshCentral Assistant
+        shell: powershell
         run: |
           msbuild meshcentralassistant.csproj `
             /p:Configuration=Release `
-            /p:TargetFramework=net6.0-windows10.0.19041.0 `
-            /p:GenerateAppxPackageOnBuild=true
+            /p:Platform="AnyCPU" `
+            /p:GenerateAppxPackageOnBuild=false
 
-      - name: Upload Build Artifacts
+      - name: Verify Build
+        shell: powershell
+        run: |
+          $exe = ".\bin\Release\MeshCentralAssistant.exe"
+
+          if (-not (Test-Path $exe)) {
+              Write-Host "Build output not found!"
+              Write-Host ""
+              Write-Host "Contents of bin\Release:"
+              
+              if (Test-Path ".\bin\Release") {
+                  Get-ChildItem ".\bin\Release" -Recurse |
+                      Select-Object FullName, Length |
+                      Format-Table -AutoSize
+              }
+
+              exit 1
+          }
+
+          Write-Host "Build successful!"
+          Write-Host "EXE: $exe"
+          Write-Host "Size: $((Get-Item $exe).Length) bytes"
+
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MeshCentralAssistant
-          path: .\**\AppPackages\**\*.*
+          path: |
+            .\bin\Release\MeshCentralAssistant.exe
+            .\bin\Release\MeshCentralAssistant.exe.config
+            .\bin\Release\*.dll
+          if-no-files-found: error
