@@ -19,33 +19,13 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Decrypt PFX File
-        shell: powershell
-        run: |
-          $pfxBase64 = "${{ secrets.WINDOWS_PFX_FILE }}"
-          [System.IO.File]::WriteAllText(
-            "cert.pfx.asc",
-            $pfxBase64
-          )
-
-          certutil -decode cert.pfx.asc cert.pfx
-
-      - name: Add Certificate to Store
-        shell: powershell
-        run: |
-          certutil -user -q `
-            -p "${{ secrets.WINDOWS_PFX_PASSWORD }}" `
-            -importPFX cert.pfx NoRoot
-
       - name: Build
         shell: powershell
         run: |
           dotnet publish meshcentralassistant.csproj `
             -c Release `
-            -f net8.0-windows10.0.19041.0 `
-            /p:GenerateAppxPackageOnBuild=true `
-            /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ secrets.WINDOWS_PFX_THUMBPRINT }}"
+            -f net6.0-windows10.0.19041.0 `
+            /p:GenerateAppxPackageOnBuild=true
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
